@@ -1,0 +1,633 @@
+Textzelle <undefined>
+#%% [markdown]
+# FORECASTING
+
+Codezelle <undefined>
+#%% [code]
+#See the yahoo finance ticker for your stock symbol
+
+#stock_symbol = '^GSPC'
+#stock_symbol = '^VIX'
+
+#stock_symbol = 'CL=F'
+#stock_symbol = 'NG=F'
+
+#stock_symbol = 'GC=F'
+#stock_symbol = 'SI=F'
+#stock_symbol = 'HG=F'
+
+stock_symbol = 'EURUSD=X'
+#stock_symbol = 'EURCHF=X'
+
+Object_study = 'EURUSD'
+
+Codezelle <undefined>
+#%% [code]
+#pip install yfinance
+
+Codezelle <undefined>
+#%% [code]
+#pip install plotly==5.3.1
+
+Codezelle <undefined>
+#%% [code]
+#import plotly.graph_objs as go
+#from plotly.graph_objs import graph_objs
+
+import yfinance as yf
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+%matplotlib inline
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 10,6
+plt.style.use('fivethirtyeight')
+
+Codezelle <undefined>
+#%% [code]
+#pip install neuralprophet
+
+Codezelle <undefined>
+#%% [code]
+from datetime import datetime
+
+Codezelle <undefined>
+#%% [code]
+Timeframe = yf.download(tickers=stock_symbol, period='5y', interval='1d')
+Ausführungsausgabe
+0KB
+	Stream
+		[*********************100%***********************]  1 of 1 completed
+
+Codezelle <undefined>
+#%% [code]
+Timeframe.head(1)
+Ausführungsausgabe
+1KB
+	text/plain
+		Open      High       Low     Close  Adj Close  Volume
+		Date                                                                 
+		2017-04-05  1.067954  1.068913  1.065405  1.068034   1.068034       0
+
+Codezelle <undefined>
+#%% [code]
+Timeframe.tail(1)
+Ausführungsausgabe
+1KB
+	text/plain
+		Open      High       Low    Close  Adj Close  Volume
+		Date                                                                
+		2022-04-05  1.097574  1.099264  1.091703  1.09218    1.09218       0
+
+Codezelle <undefined>
+#%% [code]
+#Set the start and end date for the analysis
+# datetime (Y,M,D)
+start = datetime(2017,3,5)
+end = datetime(2022,3,5)
+roughdata = yf.download(tickers=stock_symbol, start=start, end=end)
+Ausführungsausgabe
+0KB
+	Stream
+		[*********************100%***********************]  1 of 1 completed
+
+Codezelle <undefined>
+#%% [code]
+#roughdata = yf.download(tickers=stock_symbol, period='1y', interval='1d')
+roughdata
+Ausführungsausgabe
+4KB
+	text/plain
+		Open      High       Low     Close  Adj Close  Volume
+		Date                                                                 
+		2017-03-06  1.061875  1.063807  1.057820  1.062045   1.062045       0
+		2017-03-07  1.058123  1.060400  1.056078  1.057921   1.057921       0
+		2017-03-08  1.056893  1.057530  1.053730  1.057015   1.057015       0
+		2017-03-09  1.054407  1.061402  1.052565  1.054741   1.054741       0
+		2017-03-10  1.058134  1.066906  1.058134  1.057843   1.057843       0
+		...              ...       ...       ...       ...        ...     ...
+		2022-02-28  1.118105  1.124455  1.114318  1.118105   1.118105       0
+		2022-03-01  1.121466  1.123217  1.110211  1.121592   1.121592       0
+		2022-03-02  1.113102  1.114194  1.105852  1.113276   1.113276       0
+		2022-03-03  1.111358  1.111605  1.103984  1.111235   1.111235       0
+		2022-03-04  1.106929  1.106929  1.089004  1.106684   1.106684       0
+		
+		[1302 rows x 6 columns]
+
+Codezelle <undefined>
+#%% [code]
+cols_to_keep = ["Close"]
+roughdataclosecolumn = roughdata.loc[:,cols_to_keep]
+
+Codezelle <undefined>
+#%% [code]
+plt.figure(figsize=(20,10))
+plt.title("{0} Historical Trend".format(Object_study))
+plt.xlabel("DATE")
+plt.ylabel("CLOSE PRICE")
+plt.plot(roughdataclosecolumn,alpha=0.5,label='Historical Data',color='blue')
+#plt.plot(roughdata['Close'],label='Historical Data',color='red')
+plt.legend()
+Ausführungsausgabe
+101KB
+	text/plain
+		<matplotlib.legend.Legend at 0x1d9f74dea90>
+		<Figure size 1440x720 with 1 Axes>
+
+Codezelle <undefined>
+#%% [code]
+# add week column and complete time series using last trading values for holidays and weekends
+
+Codezelle <undefined>
+#%% [code]
+# Create isocalendar
+closingdata = roughdataclosecolumn
+closingdata["week"] = closingdata.index.isocalendar().week
+
+# Completing Time Series
+idx = pd.date_range(closingdata.index[0], closingdata.index[-1]) #create dates for completed time series
+completedata =closingdata.reindex(idx, fill_value= float("NaN")) #complete missing dates with NAN
+completedata = completedata.fillna(method='ffill') #fill NAN with last observation (e.g., Value for Friday on Weekend)
+completedata
+Ausführungsausgabe
+2KB
+	text/plain
+		Close  week
+		2017-03-06  1.062045    10
+		2017-03-07  1.057921    10
+		2017-03-08  1.057015    10
+		2017-03-09  1.054741    10
+		2017-03-10  1.057843    10
+		...              ...   ...
+		2022-02-28  1.118105     9
+		2022-03-01  1.121592     9
+		2022-03-02  1.113276     9
+		2022-03-03  1.111235     9
+		2022-03-04  1.106684     9
+		
+		[1825 rows x 2 columns]
+
+Codezelle <undefined>
+#%% [code]
+#Split and create Test and Train Data
+
+number_of_weeks_testing = 4
+
+# get data of last 4 weeks
+
+testdata = completedata.iloc[-number_of_weeks_testing*7:] 
+
+#testdata
+
+Codezelle <undefined>
+#%% [code]
+traindata = completedata.iloc[:-number_of_weeks_testing*7] # get all data until the last n weeks
+cols_to_keep = ["Close"]
+traindata = traindata.loc[:,cols_to_keep]
+#traindata 
+
+Codezelle <undefined>
+#%% [code]
+cols_to_keep = ["Close"]
+neuralprophetfulldata = completedata.loc[:,cols_to_keep]
+neuralprophetfulldata
+Ausführungsausgabe
+2KB
+	text/plain
+		Close
+		2017-03-06  1.062045
+		2017-03-07  1.057921
+		2017-03-08  1.057015
+		2017-03-09  1.054741
+		2017-03-10  1.057843
+		...              ...
+		2022-02-28  1.118105
+		2022-03-01  1.121592
+		2022-03-02  1.113276
+		2022-03-03  1.111235
+		2022-03-04  1.106684
+		
+		[1825 rows x 1 columns]
+
+Codezelle <undefined>
+#%% [code]
+#Prepare dataframe for Prophet
+
+Codezelle <undefined>
+#%% [code]
+neuralprophetdataset = neuralprophetfulldata.reset_index()
+neuralprophetdataset
+Ausführungsausgabe
+2KB
+	text/plain
+		index     Close
+		0    2017-03-06  1.062045
+		1    2017-03-07  1.057921
+		2    2017-03-08  1.057015
+		3    2017-03-09  1.054741
+		4    2017-03-10  1.057843
+		...         ...       ...
+		1820 2022-02-28  1.118105
+		1821 2022-03-01  1.121592
+		1822 2022-03-02  1.113276
+		1823 2022-03-03  1.111235
+		1824 2022-03-04  1.106684
+		
+		[1825 rows x 2 columns]
+
+Codezelle <undefined>
+#%% [code]
+# Rename the features: These names are NEEDED for the model fitting
+dataprophet = neuralprophetdataset.rename(columns = {"index":"ds","Close":"y"}) #renaming the columns of the dataset
+dataprophet
+Ausführungsausgabe
+2KB
+	text/plain
+		ds         y
+		0    2017-03-06  1.062045
+		1    2017-03-07  1.057921
+		2    2017-03-08  1.057015
+		3    2017-03-09  1.054741
+		4    2017-03-10  1.057843
+		...         ...       ...
+		1820 2022-02-28  1.118105
+		1821 2022-03-01  1.121592
+		1822 2022-03-02  1.113276
+		1823 2022-03-03  1.111235
+		1824 2022-03-04  1.106684
+		
+		[1825 rows x 2 columns]
+
+Textzelle <undefined>
+#%% [markdown]
+# MAKE 7 DAYS FORECAST 
+
+Codezelle <undefined>
+#%% [code]
+#set forecast days in n_forecast
+
+from neuralprophet import NeuralProphet
+# m = NeuralProphet() # default model
+# our model
+m = NeuralProphet(
+    n_forecasts=30,
+    n_lags=60,
+    n_changepoints=50,
+    yearly_seasonality=True,
+    weekly_seasonality=False,
+    daily_seasonality=False,
+    batch_size=64,
+    epochs=100,
+    learning_rate=1.0,
+)
+metrics = m.fit(dataprophet, freq="D")  
+Ausführungsausgabe
+0KB
+	Stream
+		Epoch[100/100]: 100%|█████| 100/100 [00:20<00:00,  4.78it/s, SmoothL1Loss=0.00158, MAE=0.00742, MSE=9.27e-5, RegLoss=0]
+
+Codezelle <undefined>
+#%% [code]
+# fit the model using all data
+# with cross-validation
+#metrics = m.fit(data, 
+                 #freq="D",
+                 #valid_p=0.2, # validation proportion of data (20%)
+                 #epochs=100)
+
+Codezelle <undefined>
+#%% [code]
+# Predictions for "periods" days into the future
+future = m.make_future_dataframe(dataprophet, periods=7, n_historic_predictions=len(roughdata)) 
+#we need to specify the number of days in the future
+prediction = m.predict(future)
+Ausführungsausgabe
+0KB
+	Stream
+		WARNING - (NP.forecaster.make_future_dataframe) - Number of forecast steps is defined by n_forecasts. Adjusted to 30.
+
+Codezelle <undefined>
+#%% [code]
+prediction
+Ausführungsausgabe
+10KB
+	text/plain
+		ds         y yhat1 residual1 yhat2 residual2 yhat3 residual3  \
+		0    2018-06-12  1.177413  None      None  None      None  None      None   
+		1    2018-06-13  1.174826  None      None  None      None  None      None   
+		2    2018-06-14  1.180777  None      None  None      None  None      None   
+		3    2018-06-15  1.156658  None      None  None      None  None      None   
+		4    2018-06-16  1.156658  None      None  None      None  None      None   
+		...         ...       ...   ...       ...   ...       ...   ...       ...   
+		1387 2022-03-30       NaN  None       NaN  None       NaN  None       NaN   
+		1388 2022-03-31       NaN  None       NaN  None       NaN  None       NaN   
+		1389 2022-04-01       NaN  None       NaN  None       NaN  None       NaN   
+		1390 2022-04-02       NaN  None       NaN  None       NaN  None       NaN   
+		1391 2022-04-03       NaN  None       NaN  None       NaN  None       NaN   
+		
+		     yhat4 residual4  ...  ar23  ar24  ar25       ar26       ar27       ar28  \
+		0     None      None  ...  None  None  None       None       None       None   
+		1     None      None  ...  None  None  None       None       None       None   
+		2     None      None  ...  None  None  None       None       None       None   
+		3     None      None  ...  None  None  None       None       None       None   
+		4     None      None  ...  None  None  None       None       None       None   
+		...    ...       ...  ...   ...   ...   ...        ...        ...        ...   
+		1387  None       NaN  ...  None  None  None  0.0317094  0.0368207  0.0390441   
+		1388  None       NaN  ...  None  None  None       None  0.0327455  0.0358225   
+		1389  None       NaN  ...  None  None  None       None       None  0.0323024   
+		1390  None       NaN  ...  None  None  None       None       None       None   
+		1391  None       NaN  ...  None  None  None       None       None       None   
+		
+		           ar29       ar30    trend season_yearly  
+		0          None       None     None          None  
+		1          None       None     None          None  
+		2          None       None     None          None  
+		3          None       None     None          None  
+		4          None       None     None          None  
+		...         ...        ...      ...           ...  
+		1387  0.0385546  0.0387849  1.07377   0.000647784  
+		1388   0.036656  0.0400837  1.07362   0.000366563  
+		1389  0.0351463  0.0373553  1.07348   7.96887e-05  
+		1390  0.0324524  0.0353717  1.07333  -0.000212014  
+		1391       None  0.0323551  1.07319  -0.000507679  
+		
+		[1392 rows x 94 columns]
+
+Codezelle <undefined>
+#%% [code]
+a=prediction['trend'].tail(1)
+a
+Ausführungsausgabe
+0KB
+	text/plain
+		1391    1.07319
+		Name: trend, dtype: object
+
+Codezelle <undefined>
+#%% [code]
+b=prediction['ar30'].tail(1)
+b
+Ausführungsausgabe
+0KB
+	text/plain
+		1391    0.0323551
+		Name: ar30, dtype: object
+
+Codezelle <undefined>
+#%% [code]
+c= a+b
+round(float(c),4)
+Ausführungsausgabe
+0KB
+	text/plain
+		1.1055
+
+Codezelle <undefined>
+#%% [code]
+close=pd.DataFrame(c)
+close.columns=['close']
+close
+Ausführungsausgabe
+1KB
+	text/plain
+		close
+		1391  1.10554
+
+Codezelle <undefined>
+#%% [code]
+prediction.set_index(prediction["ds"], inplace=True)
+
+Codezelle <undefined>
+#%% [code]
+# Plotting
+plt.figure(figsize=(10,2))
+
+forecast = m.plot(prediction)
+plt.title("{0} Historical Trend & 7 Days Forecast".format(Object_study), fontsize=10)
+
+plt.plot(prediction["y"],color='orange', alpha=1, label='historical trend')
+
+plt.axhline(c[len(prediction)-1], color = 'red', linestyle = ':',label='30th day ahead forecasted close:{0}'.format(round(float(c[len(prediction)-1]),4)))
+
+plt.xlabel("DATE", fontsize=10)
+plt.ylabel("CLOSE PRICE", fontsize=10)
+
+plt.legend(loc='upper left', fontsize=10)
+plt.show()
+Ausführungsausgabe
+83KB
+	text/plain
+		<Figure size 720x144 with 0 Axes>
+		<Figure size 720x432 with 1 Axes>
+
+Textzelle <undefined>
+#%% [markdown]
+### BACK TESTING (30 DAYS)
+
+Codezelle <undefined>
+#%% [code]
+# Plotting
+plt.figure(figsize=(20,2))
+
+forecast = m.plot(prediction)
+plt.title("{0} Historical Trend & 30 Days Forecast".format(Object_study), fontsize=10)
+
+#plt.plot(prediction["y"],color='orange', alpha=1, label='historical trend')
+
+plt.plot(Timeframe["Close"],alpha=0.5,label='back test',color='green')
+
+plt.axhline(c[len(prediction)-1], color = 'red', linestyle = ':',label='30th day ahead forecasted close:{0}'.format(round(float(c[len(prediction)-1]),4)))
+
+
+plt.xlabel("DATE", fontsize=10)
+plt.ylabel("CLOSE PRICE", fontsize=10)
+
+plt.legend(loc='upper right', fontsize=10)
+plt.show()
+Ausführungsausgabe
+94KB
+	text/plain
+		<Figure size 1440x144 with 0 Axes>
+		<Figure size 720x432 with 1 Axes>
+
+Codezelle <undefined>
+#%% [code]
+# Plotting
+plt.figure(figsize=(20,2))
+
+forecast = m.plot(prediction)
+plt.title("{0} Historical Trend & 30 Days Forecast".format(Object_study), fontsize=10)
+
+
+plt.xlabel("DATE", fontsize=10)
+plt.ylabel("CLOSE PRICE", fontsize=10)
+
+plt.legend(loc='upper right', fontsize=10)
+plt.show()
+Ausführungsausgabe
+86KB
+	Stream
+		No handles with labels found to put in legend.
+	text/plain
+		<Figure size 1440x144 with 0 Axes>
+		<Figure size 720x432 with 1 Axes>
+
+Codezelle <undefined>
+#%% [code]
+Last_Close = Timeframe.tail(1)
+Last_Close
+Ausführungsausgabe
+1KB
+	text/plain
+		Open      High       Low    Close  Adj Close  Volume
+		Date                                                                
+		2022-04-05  1.097574  1.099264  1.091703  1.09218    1.09218       0
+
+Codezelle <undefined>
+#%% [code]
+LC=Last_Close.iloc[0]['Close']
+LC
+
+Ausführungsausgabe
+0KB
+	text/plain
+		1.0921800136566162
+
+Codezelle <undefined>
+#%% [code]
+LC=round(LC, 5)
+LC
+Ausführungsausgabe
+0KB
+	text/plain
+		1.09218
+
+Codezelle <undefined>
+#%% [code]
+# Plotting
+plt.figure(figsize=(20,2))
+
+forecast = m.plot(prediction)
+plt.title("{0} Historical Trend & 30 Days Forecast".format(Object_study), fontsize=10)
+
+#plt.plot(prediction["y"],color='orange', alpha=1, label='historical trend')
+
+plt.plot(Timeframe["Close"],alpha=0.5,label='back test',color='green')
+
+plt.axhline(c[len(prediction)-1], color = 'red', linestyle = ':',label='30th day ahead forecasted close:{0}'.format(round(float(c[len(prediction)-1]),4)))
+#plt.axhline([LC], color = 'blue', linestyle = '-')
+plt.axhline([LC], color = 'blue', linestyle = '-', label='Backtesting: {0}'.format(LC))
+
+plt.xlabel("DATE", fontsize=10)
+plt.ylabel("CLOSE PRICE", fontsize=10)
+
+plt.legend(loc='upper right', fontsize=10)
+plt.show()
+Ausführungsausgabe
+96KB
+	text/plain
+		<Figure size 1440x144 with 0 Axes>
+		<Figure size 720x432 with 1 Axes>
+
+Codezelle <undefined>
+#%% [code]
+%pylab inline
+
+# Plotting
+plt.figure(figsize=(20,2))
+
+forecast = m.plot(prediction)
+plt.title("{0} Historical Trend & 30 Days Forecast".format(Object_study), fontsize=10)
+
+#plt.plot(prediction["y"],color='orange', alpha=1, label='historical trend')
+
+plt.plot(Timeframe["Close"],alpha=0.5,label='back test',color='green')
+
+plt.axhline(c[len(prediction)-1], color = 'red', linestyle = ':',label='30th day ahead forecasted close:{0}'.format(round(float(c[len(prediction)-1]),4)))
+
+plt.axhline([LC], color = 'green',alpha=0.5, linestyle = ':', label='Backtesting: {0}'.format(LC))
+
+plt.xlabel("DATE", fontsize=10)
+plt.ylabel("CLOSE PRICE", fontsize=10)
+
+plt.legend(loc='upper right', fontsize=10)
+plt.show()
+Ausführungsausgabe
+98KB
+	Stream
+		WARNING - (py.warnings._showwarnmsg) - C:\Users\Giorgia\anaconda3\lib\site-packages\IPython\core\magics\pylab.py:159: UserWarning:
+		
+		pylab import has clobbered these variables: ['close', 'datetime']
+		`%matplotlib` prevents importing * from pylab and numpy
+		Populating the interactive namespace from numpy and matplotlib
+	text/plain
+		<Figure size 1440x144 with 0 Axes>
+		<Figure size 720x432 with 1 Axes>
+
+Codezelle <undefined>
+#%% [code]
+# Plotting
+plt.figure(figsize=(20,2))
+
+forecast = m.plot(prediction)
+plt.title("{0} Historical Trend & 30 Days Forecast".format(Object_study), fontsize=10)
+
+#plt.plot(prediction["y"],color='orange', alpha=1, label='historical trend')
+
+plt.plot(Timeframe["Close"],alpha=0.5,label='back test',color='green')
+
+plt.axhline(c[len(prediction)-1], color = 'red', linestyle = ':',label='30th day ahead forecasted close:{0}'.format(round(float(c[len(prediction)-1]),4)))
+
+plt.axhline([LC], color = 'green',alpha=0.5, linestyle = ':', label='Backtesting: {0}'.format(LC))
+
+plt.xlabel("DATE", fontsize=10)
+plt.ylabel("CLOSE PRICE", fontsize=10)
+
+plt.legend(loc='upper right', fontsize=10)
+plt.show()
+Ausführungsausgabe
+97KB
+	text/plain
+		<Figure size 1440x144 with 0 Axes>
+		<Figure size 720x432 with 1 Axes>
+
+Codezelle <undefined>
+#%% [code]
+forecast = m.plot(prediction)
+
+def plot_pred(forecast):
+
+    # Create traces
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=forecast_new.index, y=forecast_new["y"],
+                    mode='lines',
+                    name='y'))
+    fig.add_trace(go.Scatter(x=forecast_new.index, y=forecast_new["yhat"],
+                    mode='lines',
+                    name='yhat'))
+    fig.add_trace(go.Scatter(x=forecast_new.index, y=forecast_new["yhat_lower"],
+                    mode='lines', name='lower'))
+    fig.add_trace(go.Scatter(x=forecast_new.index, y=forecast_new["yhat_upper"],
+                    mode='lines', name='upper'))
+    fig.update_layout(title=f'Prediction plot of {Object_study}',
+                   xaxis_title='Date',
+                   yaxis_title='Price')
+    
+    fig.update_xaxes(rangeslider_visible=True)
+    
+    fig.show()
+    
+print(forecast)
+
+
+   
+Ausführungsausgabe
+80KB
+	Stream
+		Figure(720x432)
+	text/plain
+		<Figure size 720x432 with 1 Axes>
+
+Codezelle <undefined>
+#%% [code]
